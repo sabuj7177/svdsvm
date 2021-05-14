@@ -346,7 +346,7 @@ float get_cost_function_value(const arma:: mat& X, const arma:: vec& label, cons
 }
 
 void SVDSVM(const arma:: mat& X, const arma:: vec& label, const arma:: mat& X_hat, const int& _rank, const string dataset_name, const int& targetRank, const int& powerIt, const int& _n_PerNode, const int& d, const int& _nodes, const double& C, const double& learnRate, const double& thresh, ofstream& resultfile, const int& cost_function){
-    int repeat_computation = 5;
+    int repeat_computation = 1;
     float summed_svd_time = 0, summed_da_time = 0, summed_total_time = 0;
     if(_rank==0){
         resultfile <<"In SVDSVM"<<endl;
@@ -398,12 +398,11 @@ void SVDSVM(const arma:: mat& X, const arma:: vec& label, const arma:: mat& X_ha
         double error = 1;
         mat prevBetaCap = zeros<mat>(targetRank,1);
         prevBetaCap.fill(1);
-        mat alpha_hat;
+        mat alpha_hat = zeros<mat>(targetRank,1);;
         mat beta_hat = zeros<mat>(targetRank,1);
         mat partial_beta_updated = zeros<mat>(_n_PerNode,1);
         mat new_beta_cap;
         if(_rank == 0){
-            alpha_hat = zeros<mat>(targetRank,1);
             new_beta_cap = zeros<mat>(targetRank,1);
         }
 
@@ -457,6 +456,41 @@ void SVDSVM(const arma:: mat& X, const arma:: vec& label, const arma:: mat& X_ha
             resultfile <<"Total Communication = "<<svd_comm+da_comm<<endl;
             resultfile <<"Per iteration time = "<<round_to_four_decimal(get_time_duration(iteration_start)/(itCount*1.0))<<endl;
             test(s, v, alpha_hat, dataset_name, resultfile);
+        }
+
+        // Find support vectors
+        MPI_Bcast_matrix(alpha_hat, alpha_hat.n_rows, alpha_hat.n_cols, MPI_DOUBLE, MPI_COMM_WORLD, 0, _rank);
+        mat partial_alpha_updated = zeros<mat>(_n_PerNode,1);
+        calculateUBeta(u, alpha_hat, partial_alpha_updated, targetRank, _nodes, _rank, da_comm);
+        vec sv1;
+        uvec svIndex1 = find(partial_alpha_updated > 0.001);
+        sv1 = partial_alpha_updated.elem(svIndex1);
+        int svCount1 = svIndex1.n_rows, svCount_global;
+        mat Xk = zeros<mat>(1,X.n_cols);
+
+        if(_rank==0){
+            Xk = X(svIndex1(0), span::all);
+        }
+        MPI_Bcast_matrix(Xk, Xk.n_rows, Xk.n_cols, MPI_DOUBLE, MPI_COMM_WORLD, 0, _rank);
+        // Calculate Bias
+        double biaslocal=0, bias;
+        double K_sv;
+        int index1;
+        mat Xnode = zeros<mat>(1, X.n_cols);
+        for(int i=0; i<svCount1; i++)
+        {
+            index1 = svIndex1(i);
+            Xnode = X(index1, span::all);
+            K_sv =  as_scalar(Xnode* Xk.t());
+            biaslocal = biaslocal +  ( sv1(i) * label(index1) * K_sv );
+        }
+
+        MPI_Allreduce(&biaslocal, &bias, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+        if(_rank==0){
+            bias = label(svIndex1(0)) - bias;
+            cout<<"Bias is : "<<bias<<endl;
+            resultfile <<"Bias = "<<bias<<endl;
         }
     }
 

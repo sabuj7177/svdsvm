@@ -27,14 +27,14 @@ new csv file. Run `train_test_split_after_meka.py` for splitting the data into t
 
 Run this command to distribute the data.
 
-    ./distribute.sh <dataset_name> <data_num> <col_num> <target_col_num>
+    ./distribute.sh <dataset_name> <data_num> <col_num> <processor>
 Example:
 
     ./distribute.sh susy_train.csv 4000000 128 64
 
 Compile:
 
-    mpicxx -o  MPIexecV1 dist_MPI_SVDSVM_MEKA_V1.cpp -larmadillo -std=c++14
+    mpicxx -o  MPIexecV1 dist_MPI_SVDSVM_MEKA_V2.cpp -larmadillo -std=c++14
 
 Run:
     mpirun -np <processor> ./MPIexecV1 1 0.1 0.001 covtype
