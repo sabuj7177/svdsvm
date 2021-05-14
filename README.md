@@ -37,4 +37,5 @@ Compile:
     mpicxx -o  MPIexecV1 dist_MPI_SVDSVM_MEKA_V2.cpp -larmadillo -std=c++14
 
 Run:
+
     mpirun -np <processor> ./MPIexecV1 1 0.1 0.001 covtype
