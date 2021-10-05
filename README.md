@@ -1,6 +1,9 @@
 # SVDSVM
 
-This is the official source code of SVDSVM. Ubuntu system is necessary for running this project.
+This work provides a method(SVDSVM) to compute linear support vector classification (SVM) distributedly and efficiently. Our algorithm uses singular value decomposition (SVD) for matrix factorization purposes. After matrix factorization, we apply the dual ascent method to train the final SVM classifier. Using stochastic SVD instead of householder QR decomposition, this method reduces the algorithm's per iteration time, resulting in an overall shorter training time compared to QRSVM, a fast distributed SVM algorithm. Our method improves the overall time complexity of the algorithm, and its storage and communication complexity is similar to QRSVM. We provide an implementation of our algorithm using openMPI and Armadillo library. Our evaluation with benchmark datasets shows that our method reduces per iteration time of dual ascent step around 5x compared to QRSVM, resulting in an overall 50% time reduction. However, singular value decomposition is not entirely lossless. It results in a small accuracy drop which we found around 0.5-1.5% for different datasets. Thus, our method provides a significant performance boost by sacrificing small accuracy compared to QRSVM.
+
+
+### This is the official source code of SVDSVM. Ubuntu system is necessary for running this project.
 
 ## Installation guide: 
 
